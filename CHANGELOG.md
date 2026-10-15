@@ -4,6 +4,8 @@ Toutes les évolutions notables du module `kgaut/healthcheck`.
 
 ## [Non publié]
 
+## [1.0.0-beta2] — 15/10/2026
+
 ### Corrigé
 
 - #2 `drush healthcheck:run --format=json` : `critical` est un booléen, et non plus « oui »/« non ». Le tableau garde l'affichage oui/non.
