@@ -1,0 +1,8 @@
+name: 'Healthcheck test'
+type: module
+description: "Témoins des tests du point de santé : une route cacheable (les caches de pages sont vivants) et une base qu'un test met en panne."
+package: Testing
+core_version_requirement: ^11.1
+hidden: true
+dependencies:
+  - healthcheck:healthcheck

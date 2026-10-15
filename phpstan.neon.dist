@@ -1,0 +1,10 @@
+parameters:
+  # Le niveau d'uzinasit, dont le module reprend le point de santé.
+  level: 5
+  paths:
+    - src
+    - tests
+  ignoreErrors:
+    # `new static()` dans `create()` : le motif des plugins de Drupal, que le
+    # cœur ignore de même.
+    - identifier: new.static

@@ -1,0 +1,25 @@
+# Le point de santé : l'adresse à donner à une sonde de disponibilité.
+healthcheck.health:
+  path: '/health'
+  defaults:
+    _controller: 'Drupal\healthcheck\Controller\HealthController::health'
+    # Sur un site multilingue à préfixe de langue, le module `redirect`
+    # normalise `/health` en `/fr/health` par une 301 : une sonde qui ne suit
+    # pas les redirections lirait 301. La route répond sans préfixe.
+    _disable_route_normalizer: TRUE
+  # HEAD en plus : le routeur le dérive de GET. POST et le reste : 405.
+  methods: [GET]
+  requirements:
+    # Public par nature : c'est l'anonyme qui interroge.
+    _access: 'TRUE'
+    # Seul format de la route : sans `?_format`, la requête est lue en JSON,
+    # et la page de maintenance sort en texte brut plutôt qu'en page HTML.
+    _format: 'json'
+  options:
+    # Seconde barrière : la réponse n'est pas cacheable pour le cœur, et
+    # cette option refuserait le cache de pages et le cache dynamique si
+    # elle le devenait. Le verdict est gardé par le vérificateur, pas par un
+    # cache de pages (qui ignore `max-age`).
+    no_cache: TRUE
+    # Pas de `_maintenance_access` : en maintenance, l'anonyme reçoit le 503
+    # du cœur, que la sonde lit « indisponible ».

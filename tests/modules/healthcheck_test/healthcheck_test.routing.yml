@@ -1,0 +1,10 @@
+# Témoin : une réponse que le cache de pages et le cache dynamique stockent.
+# Si elle n'est pas servie en HIT, le test des caches ne prouve rien de la
+# route /health.
+healthcheck_test.cacheable:
+  path: '/healthcheck-test/cacheable'
+  defaults:
+    _controller: 'Drupal\healthcheck_test\Controller\CacheableWitnessController::witness'
+  requirements:
+    # Un témoin de test, lu par un anonyme comme la route qu'il éclaire.
+    _access: 'TRUE'

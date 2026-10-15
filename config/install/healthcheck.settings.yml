@@ -1,0 +1,3 @@
+window: 30
+files_directory: 'public://.healthcheck'
+checks: {}

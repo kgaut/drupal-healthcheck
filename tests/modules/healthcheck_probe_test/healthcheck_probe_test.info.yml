@@ -1,0 +1,8 @@
+name: 'Healthcheck probe test'
+type: module
+description: "Une vérification fournie par un module tiers, pilotée par l'état : l'API de plugin du point de santé, vue de l'extérieur."
+package: Testing
+core_version_requirement: ^11.1
+hidden: true
+dependencies:
+  - healthcheck:healthcheck

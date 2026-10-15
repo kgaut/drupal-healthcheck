@@ -1,0 +1,68 @@
+# CI du module kgaut/healthcheck : style, analyse statique, tests kernel et
+# auto-test du script de sonde. Bloquante sur chaque MR et sur la branche par défaut (`1.0.x`).
+#
+# Un Drupal de test est monté autour du module (`.ci/build-site.sh`), avec
+# les modules optionnels (redis, search_api, redirect) et drush. L'image est
+# celle de la QA d'uzinasit : PHP 8.3 (la version des sites cibles), composer
+# et SQLite.
+
+stages:
+  - qa
+  - test
+
+variables:
+  DRUPAL_CORE: '^11.1'
+  SITE_DIR: /tmp/site
+  COMPOSER_CACHE_DIR: $CI_PROJECT_DIR/.composer-cache
+
+default:
+  image: wodby/drupal-php:8.3-dev
+  tags:
+    - phpunit
+  interruptible: true
+  cache:
+    key: composer-$DRUPAL_CORE
+    paths:
+      - .composer-cache/
+
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_COMMIT_TAG
+
+.site:
+  before_script:
+    - composer validate --strict --no-check-lock
+    - bash .ci/build-site.sh
+
+phpcs:
+  extends: .site
+  stage: qa
+  script:
+    - $SITE_DIR/vendor/bin/phpcs --standard=phpcs.xml.dist
+
+phpstan:
+  extends: .site
+  stage: qa
+  script:
+    - cd $SITE_DIR && vendor/bin/phpstan analyse -c web/modules/custom/healthcheck/phpstan.neon.dist --no-progress
+
+ci-health:self-test:
+  stage: qa
+  cache: []
+  script:
+    - bash scripts/ci-health.sh --self-test
+
+phpunit:
+  extends: .site
+  stage: test
+  variables:
+    SIMPLETEST_DB: 'sqlite://localhost//tmp/healthcheck.sqlite'
+    SIMPLETEST_BASE_URL: 'http://localhost'
+  script:
+    - cd $SITE_DIR && vendor/bin/phpunit -c web/core --log-junit $CI_PROJECT_DIR/junit.xml web/modules/custom/healthcheck/tests
+  artifacts:
+    when: always
+    reports:
+      junit: junit.xml

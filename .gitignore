@@ -1,0 +1,7 @@
+/vendor/
+/.composer-cache/
+/junit.xml
+
+# Docs de ticket : jamais dans ce dépôt public, ils vivent sur le ticket
+# GitLab (ADR 0001-infra-docs-de-ticket-hors-du-depot-public).
+/docs/tickets/

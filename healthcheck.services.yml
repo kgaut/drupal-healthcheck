@@ -1,0 +1,25 @@
+services:
+  _defaults:
+    autoconfigure: true
+
+  logger.channel.healthcheck:
+    parent: logger.channel_base
+    arguments: ['healthcheck']
+
+  # Les vérifications : un plugin `#[HealthCheck]` par service vérifié, dans
+  # `src/Plugin/HealthCheck/` de n'importe quel module.
+  plugin.manager.healthcheck:
+    class: Drupal\healthcheck\HealthCheckPluginManager
+    parent: default_plugin_manager
+
+  # Le vérificateur : joue les plugins actifs, garde le verdict une fenêtre
+  # (30 s par défaut) dans le bac de cache par défaut.
+  healthcheck.checker:
+    class: Drupal\healthcheck\HealthChecker
+    arguments:
+      - '@plugin.manager.healthcheck'
+      - '@config.factory'
+      - '@cache.default'
+      - '@datetime.time'
+      - '@logger.channel.healthcheck'
+  Drupal\healthcheck\HealthChecker: '@healthcheck.checker'

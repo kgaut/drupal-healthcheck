@@ -1,0 +1,5 @@
+name: 'Healthcheck'
+type: module
+description: "Point de santé /health : un verdict JSON par vérification (base, Redis, Search API, fichiers…), extensible par plugins."
+package: Administration
+core_version_requirement: ^11.1

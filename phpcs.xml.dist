@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ruleset name="healthcheck">
+  <description>Standards Drupal du module healthcheck.</description>
+  <file>.</file>
+  <arg name="extensions" value="php,module,inc,install,yml"/>
+  <arg name="report" value="full"/>
+  <arg value="sp"/>
+  <exclude-pattern>vendor/*</exclude-pattern>
+  <exclude-pattern>.ci/*</exclude-pattern>
+  <exclude-pattern>.composer-cache/*</exclude-pattern>
+  <rule ref="Drupal"/>
+  <rule ref="DrupalPractice"/>
+</ruleset>

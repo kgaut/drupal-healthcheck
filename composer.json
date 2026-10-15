@@ -1,0 +1,32 @@
+{
+    "name": "kgaut/healthcheck",
+    "description": "Point de santé /health pour Drupal, extensible par plugins : base, Redis, Search API, fichiers.",
+    "type": "drupal-module",
+    "license": "GPL-2.0-or-later",
+    "homepage": "https://github.com/kgaut/drupal-healthcheck",
+    "authors": [
+        {
+            "name": "Kevin Gautreau",
+            "email": "contact@kgaut.net"
+        }
+    ],
+    "keywords": [
+        "drupal",
+        "health",
+        "healthcheck",
+        "monitoring"
+    ],
+    "require": {
+        "php": ">=8.3",
+        "drupal/core": "^11.1"
+    },
+    "suggest": {
+        "drupal/redis": "Vérifie Redis quand une connexion est déclarée.",
+        "drupal/search_api": "Vérifie la disponibilité des serveurs de recherche actifs.",
+        "drush/drush": "Fournit la commande healthcheck:run."
+    },
+    "support": {
+        "issues": "https://github.com/kgaut/drupal-healthcheck/issues",
+        "source": "https://github.com/kgaut/drupal-healthcheck"
+    }
+}

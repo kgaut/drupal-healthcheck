@@ -1,0 +1,23 @@
+<?php
+
+/**
+ * @file
+ * Témoins des tests du point de santé.
+ */
+
+declare(strict_types=1);
+
+use Drupal\healthcheck_test\Plugin\HealthCheck\FlakyDatabase;
+
+/**
+ * Implements hook_healthcheck_info_alter().
+ *
+ * La vérification `database` passe par une sous-classe qu'un test met en
+ * panne par l'état `healthcheck_test.database_down` : le code vérifié reste
+ * celui du plugin livré quand la base répond.
+ */
+function healthcheck_test_healthcheck_info_alter(array &$definitions): void {
+  if (isset($definitions['database'])) {
+    $definitions['database']['class'] = FlakyDatabase::class;
+  }
+}
