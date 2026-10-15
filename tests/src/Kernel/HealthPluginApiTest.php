@@ -4,9 +4,13 @@ declare(strict_types=1);
 
 namespace Drupal\Tests\healthcheck\Kernel;
 
+use Consolidation\AnnotatedCommand\CommandResult;
+use Consolidation\OutputFormatters\FormatterManager;
+use Consolidation\OutputFormatters\Options\FormatterOptions;
 use Drupal\healthcheck\Drush\Commands\HealthcheckCommands;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
+use Symfony\Component\Console\Output\BufferedOutput;
 
 /**
  * Une vérification fournie par un module tiers, et la commande drush.
@@ -139,8 +143,36 @@ class HealthPluginApiTest extends HealthKernelTestBase {
 
     $this->configure('checks.probe.critical', FALSE);
     $warning = $command->run();
+    $json = json_decode($this->formatOutput($warning, 'json'), TRUE, 512, JSON_THROW_ON_ERROR);
+    $this->assertFalse($json['probe']['critical'], 'En JSON, `critical` est un booléen.');
+    $this->assertTrue($json['database']['critical']);
+    $table = $this->formatOutput($warning, 'table');
+    $this->assertMatchesRegularExpression('/probe\s+warning\s+non/', $table, 'Le tableau affiche oui/non.');
+    $this->assertMatchesRegularExpression('/database\s+ok\s+oui/', $table);
     $this->assertSame(0, $warning->getExitCode(), 'Un warning ne fait pas échouer la commande.');
     $this->assertSame('warning', $warning->getOutputData()->getArrayCopy()['probe']['verdict']);
+  }
+
+  /**
+   * Le rendu d'un résultat de commande, comme drush l'écrirait.
+   */
+  private function formatOutput(CommandResult $result, string $format): string {
+    $formatters = new FormatterManager();
+    $formatters->addDefaultFormatters();
+    $formatters->addDefaultSimplifiers();
+    $output = new BufferedOutput();
+    $options = new FormatterOptions([
+      'field-labels' => [
+        'check' => 'Vérification',
+        'verdict' => 'Verdict',
+        'critical' => 'Critique',
+        'reason' => 'Cause',
+      ],
+    ], []);
+    $options->setOption('fields', 'check,verdict,critical,reason');
+    $formatters->write($output, $format, $result->getOutputData(), $options);
+
+    return $output->fetch();
   }
 
 }

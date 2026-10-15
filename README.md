@@ -61,7 +61,7 @@ jamais mise en cache (`Cache-Control: no-store`).
 | `database` | `SELECT 1` sur la connexion par défaut | oui | jamais |
 | `redis` | `PING` par la fabrique du module `redis` | oui | aucun hôte `redis.connection` ni bac de cache `cache.backend.redis` déclaré |
 | `search_api` | `isAvailable()` de chaque serveur Search API actif (un `ping` pour Solr) | **non** | module absent, ou aucun serveur actif |
-| `files` | écriture, relecture puis suppression d'un fichier dans `public://.healthcheck` | oui | jamais |
+| `files` | écriture, relecture puis suppression d'un fichier dans `public://.healthcheck` (droits du dossier jamais corrigés) | oui | jamais |
 
 `redis` rend `failed` si une connexion est déclarée alors que le module
 `redis` est absent.
@@ -98,7 +98,7 @@ drush healthcheck:run --format=json   # pour une CI
 ```
 
 La commande vérifie à **chaque appel**, sans le verdict gardé de la route, et
-affiche la cause de chaque échec. Code de sortie : 1 si une vérification
+affiche la cause de chaque échec. En JSON, `critical` est un booléen. Code de sortie : 1 si une vérification
 critique échoue, 0 sinon (un `warning` ne fait pas échouer la commande).
 
 ## Ajouter une vérification depuis un autre module

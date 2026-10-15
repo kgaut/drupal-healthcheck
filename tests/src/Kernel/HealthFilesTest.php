@@ -120,6 +120,31 @@ class HealthFilesTest extends HealthKernelTestBase {
   }
 
   /**
+   * Un dossier en lecture seule : `failed`, et ses droits ne sont pas touchés.
+   *
+   * Une sonde ne modifie pas ce qu'elle mesure : corriger les droits au
+   * passage masquerait la panne. Sans objet sous root, qui écrit partout.
+   */
+  public function testUnDossierEnLectureSeuleEchoueSansEtreCorrige(): void {
+    if (function_exists('posix_geteuid') && posix_geteuid() === 0) {
+      $this->markTestSkipped('root écrit dans un dossier en lecture seule.');
+    }
+    $directory = 'public://.healthcheck';
+    $this->container->get('file_system')->prepareDirectory($directory, FileSystem::CREATE_DIRECTORY);
+    chmod($directory, 0555);
+
+    try {
+      $this->assertHealth(503, self::FILES_FAILED, $this->request('/health'));
+      clearstatcache();
+      $this->assertSame('555', substr(sprintf('%o', fileperms($directory)), -3), 'Les droits du dossier sont intacts.');
+      $this->assertStringContainsString('« files »', $this->journal->messages()[0]);
+    }
+    finally {
+      chmod($directory, 0775);
+    }
+  }
+
+  /**
    * Un témoin impossible à supprimer : `failed`, et nettoyé au passage suivant.
    */
   public function testUnTemoinNonSupprimableEchoue(): void {

@@ -1,12 +1,12 @@
 # 0001 — La vérification `files` écrit dans `public://.healthcheck`, une fois par fenêtre
 
-- **Statut** : En vigueur
+- **Statut** : Amendée par [`0002-plugin-files-ne-corrige-pas-les-droits`](../0002-plugin-files-ne-corrige-pas-les-droits.md) : le dossier est créé s'il manque, ses droits ne sont plus corrigés
 - **Date** : 15/10/2026
 - **Ticket** : #1
 - **Périmètre** : plugin `files`
 - **Remplace** : —
 - **Amende** : —
-- **Complète** : [`0001-plugin-contrat-du-type-de-plugin-et-du-json`](0001-plugin-contrat-du-type-de-plugin-et-du-json.md)
+- **Complète** : [`0001-plugin-contrat-du-type-de-plugin-et-du-json`](../0001-plugin-contrat-du-type-de-plugin-et-du-json.md)
 
 ## Contexte
 
@@ -71,3 +71,4 @@ autres vérifications. Une rafale d'appels n'écrit donc pas à chaque appel.
 
 - 15/10/2026 : rédigée au ticket #1. Dossier `public://` et nettoyage des
   reliquats validés avec les mainteneurs du premier site cible.
+- 15/10/2026 : amendée par `0002-plugin-files-ne-corrige-pas-les-droits` (#2).

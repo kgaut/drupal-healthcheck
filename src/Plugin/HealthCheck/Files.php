@@ -20,7 +20,12 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * (`healthcheck.settings:files_directory`) : le volume des fichiers publics
  * est celui qu'un site perd quand son disque disparaît, là où
  * `temporary://` vit souvent sur un autre (`/tmp`). ADR
- * `0001-plugin-files-ecrit-dans-public`.
+ * `0001-plugin-files-ecrit-dans-public`, amendée par
+ * `0002-plugin-files-ne-corrige-pas-les-droits`.
+ *
+ * Une sonde ne modifie pas ce qu'elle mesure : le dossier est créé s'il
+ * manque, mais ses droits ne sont jamais corrigés. Un dossier non inscriptible
+ * rend `failed`.
  *
  * Le témoin ne doit jamais rester sur le disque :
  * - un reliquat d'un passage précédent (`probe-*.txt`) est supprimé avant
@@ -72,7 +77,8 @@ class Files extends HealthCheckBase {
    */
   public function check(): CheckResult {
     $directory = $this->directory();
-    if (!$this->fileSystem->prepareDirectory($directory, FileSystemInterface::CREATE_DIRECTORY | FileSystemInterface::MODIFY_PERMISSIONS)) {
+    // Sans MODIFY_PERMISSIONS : corriger les droits masquerait la panne.
+    if (!$this->fileSystem->prepareDirectory($directory, FileSystemInterface::CREATE_DIRECTORY)) {
       return CheckResult::failed("dossier $directory impossible à créer ou à écrire");
     }
 

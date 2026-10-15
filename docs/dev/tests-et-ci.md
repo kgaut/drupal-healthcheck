@@ -60,6 +60,14 @@ Norme Drupal : la branche par défaut est `1.0.x`, et les tags sont `1.0.0`,
 `1.0.1`… Une MR part de `1.0.x` et y revient sans commit de merge
 (fusion en avance rapide).
 
+## Piège DDEV : simuler une panne de Redis
+
+Sur le réseau partagé de DDEV, le nom `redis` résout aussi vers les
+conteneurs Redis des **autres projets** lancés. Arrêter le conteneur Redis
+d'un projet ne simule donc pas une panne : le site en joint un autre.
+Pour simuler une panne, déclarez un hôte qui n'existe pas (échec immédiat)
+ou une IP qui ne répond pas (environ 5 s), dans `settings.local.php`.
+
 ## En CI
 
 `.gitlab-ci.yml`, sur chaque MR, sur la branche par défaut (`1.0.x`) et sur les tags, dans l'image

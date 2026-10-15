@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Drupal\healthcheck\Drush\Commands;
 
 use Consolidation\AnnotatedCommand\CommandResult;
+use Consolidation\OutputFormatters\Options\FormatterOptions;
 use Consolidation\OutputFormatters\StructuredData\RowsOfFields;
 use Drupal\healthcheck\HealthChecker;
 use Drush\Attributes as CLI;
@@ -18,7 +19,7 @@ use Drush\Commands\DrushCommands;
  * écriture du verdict gardé) et avec la cause de chaque échec : la sortie
  * est lue par un opérateur ou une CI, pas par le public. Code de sortie 1
  * si une vérification critique a échoué, 0 sinon (un `warning` ne compte
- * pas).
+ * pas). En JSON, `critical` est un booléen ; le tableau l'affiche oui/non.
  */
 final class HealthcheckCommands extends DrushCommands {
 
@@ -54,13 +55,16 @@ final class HealthcheckCommands extends DrushCommands {
         'check' => $outcome->id,
         'label' => $outcome->label,
         'verdict' => $outcome->verdict,
-        'critical' => $outcome->critical ? 'oui' : 'non',
+        'critical' => $outcome->critical,
         'reason' => $outcome->reason,
       ];
     }
     $failed = HealthChecker::globalStatus($checks) === HealthChecker::FAILED;
+    $data = new RowsOfFields($rows);
+    // Lisible dans le tableau, booléen dans les formats de données.
+    $data->addRendererFunction(static fn(string $key, mixed $cell, FormatterOptions $options): mixed => $key === 'critical' && is_bool($cell) ? ($cell ? 'oui' : 'non') : $cell);
 
-    return CommandResult::dataWithExitCode(new RowsOfFields($rows), $failed ? self::EXIT_FAILURE : self::EXIT_SUCCESS);
+    return CommandResult::dataWithExitCode($data, $failed ? self::EXIT_FAILURE : self::EXIT_SUCCESS);
   }
 
 }
