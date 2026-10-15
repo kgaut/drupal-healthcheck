@@ -4,6 +4,8 @@ Toutes les évolutions notables du module `kgaut/healthcheck`.
 
 ## [Non publié]
 
+## [1.0.0-beta3] — 15/10/2026
+
 ### Corrigé
 
 - #3 `files` : deux vérifications simultanées ne se suppriment plus leurs témoins (seul un témoin de plus d'une minute est un reliquat), ce qui évite un faux 503 gardé toute la fenêtre.
