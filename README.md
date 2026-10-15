@@ -45,7 +45,10 @@ Verdict de chaque vérification :
 `"status":"ok"`, sans suivre les redirections.** Une panne franche donne un
 500, et un proxy peut répondre 200 avec sa propre page.
 
-Le corps ne contient ni hôte, ni chemin, ni version, ni message d'erreur. La
+Le corps ne contient ni hôte, ni chemin, ni version, ni message d'erreur.
+Il dit en revanche quels services le site utilise (`redis: not_configured`
+révèle un site sans Redis) : c'est le prix d'un verdict par vérification.
+Aucune vérification active donne `503` et `"status":"failed"`. La
 cause d'un échec va au journal de Drupal (canal `healthcheck`) et dans la
 sortie de `drush healthcheck:run`.
 
@@ -60,7 +63,7 @@ jamais mise en cache (`Cache-Control: no-store`).
 |---|---|---|---|
 | `database` | `SELECT 1` sur la connexion par défaut | oui | jamais |
 | `redis` | `PING` par la fabrique du module `redis` | oui | aucun hôte `redis.connection` ni bac de cache `cache.backend.redis` déclaré |
-| `search_api` | `isAvailable()` de chaque serveur Search API actif (un `ping` pour Solr) | **non** | module absent, ou aucun serveur actif |
+| `search_api` | `isAvailable()` de chaque serveur Search API actif (un `ping` pour Solr ; un backend base de données est toujours disponible, il ne contacte rien et c'est `database` qui compte) | **non** | module absent, ou aucun serveur actif |
 | `files` | écriture, relecture puis suppression d'un fichier dans `public://.healthcheck` (droits du dossier jamais corrigés) | oui | jamais |
 
 `redis` rend `failed` si une connexion est déclarée alors que le module
@@ -96,6 +99,11 @@ $config['healthcheck.settings']['files_directory'] = 'private://healthcheck';
 drush healthcheck:run                 # tableau : vérification, verdict, critique, cause
 drush healthcheck:run --format=json   # pour une CI
 ```
+
+⚠️ La commande s'exécute sous l'utilisateur de drush. Elle écrit son témoin
+dans `public://.healthcheck`, mais ne **crée** jamais ce dossier : il
+appartiendrait à cet utilisateur, et le module ne corrige pas les droits.
+Juste après l'installation, appelez `/health` une fois.
 
 La commande vérifie à **chaque appel**, sans le verdict gardé de la route, et
 affiche la cause de chaque échec. En JSON, `critical` est un booléen. Code de sortie : 1 si une vérification

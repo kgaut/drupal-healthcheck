@@ -8,12 +8,12 @@ contrôleur :
 
 | Test | Couvre |
 |---|---|
-| `HealthRouteTest` | 200, `no-store`, HEAD, 405 sur POST, aucune session ni journal, maintenance (503 du cœur), fenêtre de 30 s sans glissement, fenêtre réglable, caches de pages contournés, base en panne, Redis déclaré sans module, vérification désactivée |
-| `HealthRedisTest` | la vraie fabrique du module `redis`, avec un transport simulé (`FakeRedis`) : formes de `PONG`, panne, rien de contacté sans connexion, bac de cache Redis sans hôte, jamais de `ok` depuis un magasin en panne |
+| `HealthRouteTest` | 200, `no-store`, HEAD, 405 sur POST, aucune session ni journal, maintenance (503 du cœur), fenêtre de 30 s sans glissement, fenêtre réglable, caches de pages contournés, base en panne, Redis déclaré sans module, vérification désactivée, aucune vérification active (503) |
+| `HealthRedisTest` | la vraie fabrique du module `redis`, avec un transport simulé (`FakeRedis`) : formes de `PONG`, panne, rien de contacté sans connexion, `cache.default` et un bac de `cache.bins` en Redis sans hôte, jamais de `ok` depuis un magasin en panne |
 | `HealthRouteUnderRouteNormalizerTest` | pas de 301 sous `redirect` et deux langues préfixées, avec un témoin redirigé |
 | `HealthSearchApiTest` | serveur disponible, `warning` en 200, critique par site en 503, aucun serveur actif |
-| `HealthFilesTest` | témoin supprimé, une écriture par fenêtre, reliquat nettoyé, dossier impossible à créer, suppression refusée, dossier réglable |
-| `HealthPluginApiTest` | vérification tierce : place dans le corps, échec, exception, `not_configured`, critique et active par site, commande drush |
+| `HealthFilesTest` | témoin supprimé, une écriture par fenêtre, reliquat ancien nettoyé et témoin récent intact, dossier de fichiers disparu jamais recréé, racine d'un schéma refusée, commande qui ne crée pas le dossier, dossier impossible à créer, dossier en lecture seule non corrigé, suppression refusée, dossier réglable |
+| `HealthPluginApiTest` | vérification tierce : place dans le corps, échec, exception, `not_configured`, critique et active par site, changement de criticité dans la fenêtre, commande drush (JSON booléen) |
 
 Points de méthode, repris d'uzinasit :
 

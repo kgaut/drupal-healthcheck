@@ -104,6 +104,21 @@ class HealthPluginApiTest extends HealthKernelTestBase {
   }
 
   /**
+   * Changer la criticité invalide le verdict gardé, dans la fenêtre.
+   */
+  public function testChangerLaCriticiteInvalideLeVerdictGarde(): void {
+    $this->configure('checks.probe.critical', FALSE);
+    $this->mode('failed');
+    $this->assertHealth(200, self::body('ok', 'warning'), $this->request('/health'));
+
+    $this->configure('checks.probe.critical', TRUE);
+    $this->advance(1);
+
+    $this->assertHealth(503, self::body('failed', 'failed'), $this->request('/health'));
+    $this->assertSame(2, $this->container->get('state')->get('healthcheck_probe_test.calls'));
+  }
+
+  /**
    * Désactivée par le site, elle n'est ni appelée ni affichée.
    */
   public function testDesactiveeParSiteElleDisparait(): void {
@@ -124,6 +139,9 @@ class HealthPluginApiTest extends HealthKernelTestBase {
   public function testLaCommandeDrushVerifieChaqueAppel(): void {
     $command = new HealthcheckCommands($this->container->get('healthcheck.checker'));
     $state = $this->container->get('state');
+    // La commande ne crée pas le dossier du témoin : la route l'a fait.
+    $directory = 'public://.healthcheck';
+    $this->container->get('file_system')->prepareDirectory($directory, 1);
 
     $ok = $command->run();
     $this->assertSame(0, $ok->getExitCode());

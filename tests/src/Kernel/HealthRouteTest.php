@@ -260,6 +260,23 @@ class HealthRouteTest extends HealthKernelTestBase {
   }
 
   /**
+   * Aucune vérification active : 503, et une entrée au journal.
+   *
+   * Un point de santé qui ne vérifie rien ne prouve rien.
+   */
+  public function testAucuneVerificationActiveRend503(): void {
+    $this->configure('checks', [
+      'database' => ['enabled' => FALSE],
+      'redis' => ['enabled' => FALSE],
+      'search_api' => ['enabled' => FALSE],
+      'files' => ['enabled' => FALSE],
+    ]);
+
+    $this->assertHealth(503, '{"status":"failed","checks":{}}', $this->request('/health'));
+    $this->assertStringContainsString('aucune vérification active', $this->journal->messages()[0]);
+  }
+
+  /**
    * Une vérification désactivée par site disparaît du corps.
    *
    * Un verdict gardé sous l'ancienne liste ne vaut plus : la liste change,

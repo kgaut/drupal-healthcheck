@@ -49,7 +49,9 @@ final class HealthcheckCommands extends DrushCommands {
   public function run(array $options = ['format' => 'table']): CommandResult {
     $rows = [];
     $checks = [];
-    foreach ($this->checker->run() as $outcome) {
+    // La commande ne crée rien de durable : elle tourne peut-être sous un
+    // autre utilisateur que le serveur web.
+    foreach ($this->checker->run(TRUE) as $outcome) {
       $checks[$outcome->id] = $outcome->verdict;
       $rows[$outcome->id] = [
         'check' => $outcome->id,

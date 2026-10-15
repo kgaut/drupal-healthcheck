@@ -4,6 +4,16 @@ Toutes les évolutions notables du module `kgaut/healthcheck`.
 
 ## [Non publié]
 
+### Corrigé
+
+- #3 `files` : deux vérifications simultanées ne se suppriment plus leurs témoins (seul un témoin de plus d'une minute est un reliquat), ce qui évite un faux 503 gardé toute la fenêtre.
+- #3 `files` : un dossier de fichiers disparu n'est plus recréé (la racine `public://` doit exister), la racine d'un schéma est refusée comme dossier du témoin, et `drush healthcheck:run` ne crée plus `.healthcheck` sous son propre utilisateur.
+- #3 Le verdict gardé dépend aussi de la criticité des vérifications, et aucune vérification active rend désormais 503. ADR `0003-plugin-verdicts-surs-sous-concurrence-et-hors-du-serveur-web`, qui complète `0001-plugin-contrat-du-type-de-plugin-et-du-json` et `0002-plugin-files-ne-corrige-pas-les-droits`.
+
+### Documentation
+
+- #3 Search API avec un backend base de données, services révélés par le corps, commande drush et dossier du témoin, appels simultanés ; publication consignée dans l'ADR du module dédié.
+
 ## [1.0.0-beta2] — 15/10/2026
 
 ### Corrigé

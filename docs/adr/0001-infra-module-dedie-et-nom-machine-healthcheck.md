@@ -74,3 +74,7 @@ depuis 2020.
 ## Suivi
 
 - 15/10/2026 : rédigée au ticket #1, à la création du module.
+- 15/10/2026 : publié le jour même sur go de Kevin. Le dépôt GitHub public
+  `kgaut/drupal-healthcheck` (branche `1.0.x`) est enregistré sur Packagist,
+  et la forge reste privée. La « publication reste à faire » des
+  Conséquences est donc faite (#3).

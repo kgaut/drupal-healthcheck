@@ -17,6 +17,8 @@ use Psr\Log\LoggerInterface;
  * site n'utilise pas ce service). Le verdict global est `failed` dès qu'une
  * vérification est `failed`, `ok` sinon : un `warning` ne fait jamais tomber
  * le point de santé (ADR `0001-plugin-contrat-du-type-de-plugin-et-du-json`).
+ * Aucune vérification active vaut `failed` : un point de santé qui ne
+ * vérifie rien ne prouve rien.
  *
  * Pour la route, le verdict est gardé au plus `window` secondes (30 par
  * défaut), compté depuis l'instant de la vérification et jamais renouvelé
@@ -93,20 +95,23 @@ class HealthChecker {
   public function status(): array {
     $now = (int) $this->time->getCurrentTime();
     $window = $this->window();
-    $ids = $this->enabledIds();
-    if ($ids === NULL) {
+    $active = $this->activeChecks();
+    if ($active === NULL) {
       return ['status' => self::FAILED, 'checks' => []];
     }
 
-    $checks = $this->remembered($now, $window, $ids);
+    $checks = $this->remembered($now, $window, $active);
     if ($checks === NULL) {
       $checks = [];
       foreach ($this->run() as $outcome) {
         $checks[$outcome->id] = $outcome->verdict;
         $this->logOutcome($outcome);
       }
+      if ($checks === []) {
+        $this->logger->error('Point de santé : aucune vérification active, le point de santé rend failed.');
+      }
       try {
-        $this->memo->set(self::CID, ['checked_at' => $now, 'checks' => $checks], $now + $window);
+        $this->memo->set(self::CID, ['checked_at' => $now, 'active' => $active, 'checks' => $checks], $now + $window);
       }
       catch (\Throwable) {
         // Sans magasin, la requête suivante vérifie à nouveau : c'est le prix
@@ -123,10 +128,16 @@ class HealthChecker {
    * Ni lecture ni écriture du verdict gardé, rien au journal : c'est
    * l'appelant qui décide (la route journalise, la commande drush affiche).
    *
+   * @param bool $cli
+   *   Joué depuis la ligne de commande, sous un utilisateur qui n'est peut-être
+   *   pas celui du serveur web. Transmis à chaque plugin dans sa
+   *   configuration (`cli`) : une vérification n'y crée rien de durable
+   *   (dossier…) qui appartiendrait à cet utilisateur.
+   *
    * @return list<\Drupal\healthcheck\CheckOutcome>
    *   Le verdict de chaque vérification active, dans l'ordre du corps.
    */
-  public function run(): array {
+  public function run(bool $cli = FALSE): array {
     $definitions = $this->definitions();
     if ($definitions === NULL) {
       return [];
@@ -139,7 +150,7 @@ class HealthChecker {
       }
       $critical = self::isCritical($overrides, $id, $definition);
       $label = (string) ($definition['label'] ?? $id);
-      $outcomes[] = $this->runOne($id, $label, $critical);
+      $outcomes[] = $this->runOne($id, $label, $critical, $cli);
     }
 
     return $outcomes;
@@ -152,17 +163,17 @@ class HealthChecker {
    *   Le verdict de chaque vérification.
    */
   public static function globalStatus(array $checks): string {
-    return in_array(self::FAILED, $checks, TRUE) ? self::FAILED : self::OK;
+    return $checks === [] || in_array(self::FAILED, $checks, TRUE) ? self::FAILED : self::OK;
   }
 
   /**
    * Joue une vérification et traduit son résultat en verdict.
    */
-  protected function runOne(string $id, string $label, bool $critical): CheckOutcome {
+  protected function runOne(string $id, string $label, bool $critical, bool $cli = FALSE): CheckOutcome {
     $failed = $critical ? self::FAILED : self::WARNING;
     try {
       /** @var \Drupal\healthcheck\HealthCheckInterface $plugin */
-      $plugin = $this->pluginManager->createInstance($id);
+      $plugin = $this->pluginManager->createInstance($id, ['cli' => $cli]);
       if (!$plugin->applies()) {
         return new CheckOutcome($id, $label, $critical, self::NOT_CONFIGURED);
       }
@@ -184,14 +195,15 @@ class HealthChecker {
    *   L'instant courant.
    * @param int $window
    *   La durée de vie d'un verdict.
-   * @param list<string> $ids
-   *   Les vérifications actives, dans l'ordre : un verdict gardé sous une
-   *   autre liste (réglage changé, module installé) ne vaut plus.
+   * @param array<string, bool> $active
+   *   Les vérifications actives et leur criticité, dans l'ordre : un verdict
+   *   gardé sous une autre liste ou une autre criticité (réglage changé,
+   *   module installé) ne vaut plus.
    *
    * @return array<string, string>|null
    *   Le verdict de chaque vérification, ou NULL s'il faut vérifier.
    */
-  protected function remembered(int $now, int $window, array $ids): ?array {
+  protected function remembered(int $now, int $window, array $active): ?array {
     try {
       $item = $this->memo->get(self::CID);
     }
@@ -209,7 +221,7 @@ class HealthChecker {
     if (!is_int($checkedAt) || $checkedAt > $now || $now - $checkedAt >= $window) {
       return NULL;
     }
-    if (!is_array($checks) || array_keys($checks) !== $ids) {
+    if (($item->data['active'] ?? NULL) !== $active || !is_array($checks) || array_keys($checks) !== array_keys($active)) {
       return NULL;
     }
     foreach ($checks as $verdict) {
@@ -235,22 +247,25 @@ class HealthChecker {
   }
 
   /**
-   * Les identifiants des vérifications actives, dans l'ordre du corps.
+   * Les vérifications actives et leur criticité, dans l'ordre du corps.
    *
-   * @return list<string>|null
-   *   NULL si les définitions sont illisibles.
+   * @return array<string, bool>|null
+   *   La criticité, par identifiant ; NULL si les définitions sont illisibles.
    */
-  protected function enabledIds(): ?array {
+  protected function activeChecks(): ?array {
     $definitions = $this->definitions();
     if ($definitions === NULL) {
       return NULL;
     }
     $overrides = $this->overrides();
+    $active = [];
+    foreach ($definitions as $id => $definition) {
+      if (self::isEnabled($overrides, $id)) {
+        $active[$id] = self::isCritical($overrides, $id, $definition);
+      }
+    }
 
-    return array_values(array_filter(
-      array_keys($definitions),
-      static fn(string $id): bool => self::isEnabled($overrides, $id),
-    ));
+    return $active;
   }
 
   /**

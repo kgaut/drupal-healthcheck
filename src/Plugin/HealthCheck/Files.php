@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Drupal\healthcheck\Plugin\HealthCheck;
 
+use Drupal\Component\Datetime\TimeInterface;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\File\FileSystemInterface;
+use Drupal\Core\StreamWrapper\StreamWrapperManager;
 use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Drupal\healthcheck\Attribute\HealthCheck;
 use Drupal\healthcheck\CheckResult;
@@ -23,13 +25,22 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * `0001-plugin-files-ecrit-dans-public`, amendée par
  * `0002-plugin-files-ne-corrige-pas-les-droits`.
  *
- * Une sonde ne modifie pas ce qu'elle mesure : le dossier est créé s'il
- * manque, mais ses droits ne sont jamais corrigés. Un dossier non inscriptible
- * rend `failed`.
+ * Une sonde ne modifie pas ce qu'elle mesure :
+ * - la racine du schéma (`public://`) doit exister : un dossier de fichiers
+ *   disparu n'est jamais recréé, il rend `failed` ;
+ * - seul le sous-dossier du témoin est créé s'il manque, et jamais par la
+ *   commande drush (`cli` dans la configuration du plugin), qui le créerait
+ *   au nom de son propre utilisateur ;
+ * - ses droits ne sont jamais corrigés : non inscriptible, il rend `failed` ;
+ * - la racine d'un schéma est refusée comme dossier du témoin : le nettoyage
+ *   y toucherait des fichiers du site.
  *
  * Le témoin ne doit jamais rester sur le disque :
- * - un reliquat d'un passage précédent (`probe-*.txt`) est supprimé avant
- *   l'écriture ; s'il ne peut l'être, la vérification échoue ;
+ * - un reliquat (`probe-*.txt`) plus vieux que la fenêtre, et au moins
+ *   qu'une minute, est supprimé avant l'écriture ; s'il ne peut l'être, la
+ *   vérification échoue. Un témoin plus récent est celui d'une vérification
+ *   simultanée (route et drush, appels à l'expiration de la fenêtre) : il
+ *   n'est pas touché ;
  * - le témoin est supprimé même si l'écriture ou la relecture a échoué ;
  *   s'il existe encore après, la vérification échoue.
  *
@@ -49,12 +60,22 @@ class Files extends HealthCheckBase {
    */
   public const PROBE_MASK = '/^probe-[0-9a-f]+\.txt$/';
 
+  /**
+   * L'âge minimal d'un reliquat supprimable, en secondes.
+   *
+   * Un témoin vit quelques millisecondes : au-delà d'une minute (ou de la
+   * fenêtre, si elle est plus longue), il n'appartient plus à une
+   * vérification en cours.
+   */
+  public const LEFTOVER_MIN_AGE = 60;
+
   public function __construct(
     array $configuration,
     $plugin_id,
     $plugin_definition,
     protected FileSystemInterface $fileSystem,
     protected ConfigFactoryInterface $configFactory,
+    protected TimeInterface $time,
   ) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
   }
@@ -69,6 +90,7 @@ class Files extends HealthCheckBase {
       $plugin_definition,
       $container->get('file_system'),
       $container->get('config.factory'),
+      $container->get('datetime.time'),
     );
   }
 
@@ -77,12 +99,36 @@ class Files extends HealthCheckBase {
    */
   public function check(): CheckResult {
     $directory = $this->directory();
-    // Sans MODIFY_PERMISSIONS : corriger les droits masquerait la panne.
-    if (!$this->fileSystem->prepareDirectory($directory, FileSystemInterface::CREATE_DIRECTORY)) {
-      return CheckResult::failed("dossier $directory impossible à créer ou à écrire");
+    $scheme = StreamWrapperManager::getScheme($directory);
+    if ($scheme === FALSE || trim((string) StreamWrapperManager::getTarget($directory), '/') === '') {
+      return CheckResult::failed("dossier $directory refusé : il faut un sous-dossier dédié, pas la racine d'un schéma");
+    }
+    $root = $scheme . '://';
+    // `@` : le flux local de Drupal émet un avertissement sur un chemin
+    // absent, que le journal recevrait à chaque vérification.
+    if (!@is_dir($root)) {
+      return CheckResult::failed("racine $root absente : le dossier des fichiers du site n'existe plus");
+    }
+    if (!@is_dir($directory)) {
+      if ($this->configuration['cli'] ?? FALSE) {
+        return CheckResult::failed("dossier $directory absent : la commande ne le crée pas (il appartiendrait à son utilisateur), un appel à /health le crée");
+      }
+      // Sans MODIFY_PERMISSIONS : corriger les droits masquerait la panne.
+      if (!$this->fileSystem->prepareDirectory($directory, FileSystemInterface::CREATE_DIRECTORY)) {
+        return CheckResult::failed("dossier $directory impossible à créer");
+      }
+    }
+    elseif (!is_writable($directory)) {
+      return CheckResult::failed("dossier $directory non inscriptible");
     }
 
+    $threshold = (int) $this->time->getCurrentTime() - max(self::LEFTOVER_MIN_AGE, $this->window());
     foreach ($this->fileSystem->scanDirectory($directory, self::PROBE_MASK, ['recurse' => FALSE]) as $leftover) {
+      $mtime = @filemtime($leftover->uri);
+      if ($mtime !== FALSE && $mtime > $threshold) {
+        // Le témoin d'une vérification simultanée : pas un reliquat.
+        continue;
+      }
       if (!$this->remove($leftover->uri)) {
         return CheckResult::failed("reliquat {$leftover->uri} impossible à supprimer");
       }
@@ -122,15 +168,22 @@ class Files extends HealthCheckBase {
   }
 
   /**
-   * Le dossier du témoin, sans `/` final.
+   * Le dossier du témoin, sans `/` final (sauf une racine, refusée ensuite).
    */
   protected function directory(): string {
     $directory = $this->configFactory->get('healthcheck.settings')->get('files_directory');
-
     $directory = is_string($directory) && $directory !== '' ? $directory : HealthChecker::DEFAULT_FILES_DIRECTORY;
 
-    // `public://` seul garde ses barres : c'est la racine du schéma.
-    return str_ends_with($directory, '://') ? substr($directory, 0, -1) : rtrim($directory, '/');
+    return str_ends_with($directory, '://') ? $directory : rtrim($directory, '/');
+  }
+
+  /**
+   * La fenêtre du point de santé, en secondes.
+   */
+  protected function window(): int {
+    $window = $this->configFactory->get('healthcheck.settings')->get('window');
+
+    return is_int($window) && $window > 0 ? $window : HealthChecker::DEFAULT_WINDOW;
   }
 
 }

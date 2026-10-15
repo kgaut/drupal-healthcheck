@@ -158,6 +158,17 @@ class HealthRedisTest extends HealthKernelTestBase {
   }
 
   /**
+   * Un seul bac de cache Redis (`cache.bins`), sans hôte : Redis est vérifié.
+   */
+  public function testUnBacParticulierEnRedisEstVerifie(): void {
+    $this->setSetting('redis.connection', ['interface' => 'PhpRedis']);
+    $this->setSetting('cache', ['bins' => ['render' => 'cache.backend.redis']]);
+
+    $this->assertHealth(200, self::OK, $this->request('/health'));
+    $this->assertSame(1, $this->redis->pings);
+  }
+
+  /**
    * Une panne de Redis se voit au plus tard 30 s après la vérification.
    *
    * Dans la fenêtre, le verdict gardé (dans un magasin qui répond, ici le

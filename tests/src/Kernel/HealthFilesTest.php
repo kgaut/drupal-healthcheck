@@ -84,19 +84,84 @@ class HealthFilesTest extends HealthKernelTestBase {
   }
 
   /**
-   * Un reliquat d'un passage précédent est supprimé au passage suivant.
+   * Un reliquat ancien est supprimé, le témoin d'une vérification en cours non.
+   *
+   * Deux vérifications simultanées (la route à l'expiration de la fenêtre,
+   * ou la route et drush) : si l'une supprimait le témoin tout juste écrit
+   * par l'autre, celle-ci relirait un fichier absent et rendrait un faux
+   * `failed`, gardé toute la fenêtre. Seul un témoin de plus d'une minute est
+   * un reliquat.
    */
-  public function testUnReliquatEstSupprimeAuPassageSuivant(): void {
+  public function testUnReliquatAncienEstSupprimeUnTemoinRecentNon(): void {
     $fileSystem = $this->container->get('file_system');
     $directory = 'public://.healthcheck';
     $fileSystem->prepareDirectory($directory, FileSystem::CREATE_DIRECTORY);
-    file_put_contents("$directory/probe-0123456789abcdef.txt", 'reliquat');
+    $old = "$directory/probe-0123456789abcdef.txt";
+    $recent = "$directory/probe-fedcba9876543210.txt";
+    file_put_contents($old, 'reliquat');
+    touch($old, $this->clock->now - 61);
+    file_put_contents($recent, 'témoin en cours');
+    touch($recent, $this->clock->now - 5);
     file_put_contents("$directory/autre.txt", 'pas un témoin');
 
     $this->assertHealth(200, self::OK, $this->request('/health'));
 
-    $this->assertSame([], $this->probes(), 'Le reliquat a disparu.');
+    $this->assertSame([$recent], $this->probes(), 'Le reliquat ancien a disparu, le témoin récent est intact.');
     $this->assertFileExists("$directory/autre.txt", 'Seuls les témoins sont supprimés.');
+  }
+
+  /**
+   * Un dossier de fichiers disparu n'est pas recréé : `failed`.
+   *
+   * Un `mkdir` récursif recréerait le dossier des fichiers, vide, et un `ok`
+   * masquerait sa perte : c'est le cas même d'un volume détaché, quand le
+   * dossier parent reste inscriptible.
+   */
+  public function testUnDossierDeFichiersDisparuResteAbsent(): void {
+    // Le dossier des fichiers du site pointe là où plus rien n'existe.
+    $public = $this->siteDirectory . '/files-disparu';
+    $this->setSetting('file_public_path', $public);
+
+    $this->assertHealth(503, self::FILES_FAILED, $this->request('/health'));
+
+    $this->assertDirectoryDoesNotExist($public, 'Le dossier des fichiers n’est pas recréé.');
+    $this->assertCount(1, $this->journal->messages(), 'Une entrée, sans avertissement de flux.');
+    $this->assertStringContainsString('racine public:// absente', $this->journal->messages()[0]);
+  }
+
+  /**
+   * La racine d'un schéma est refusée : le nettoyage y toucherait le site.
+   */
+  public function testLaRacineDuSchemaEstRefusee(): void {
+    $this->configure('files_directory', 'public://');
+    file_put_contents('public://probe-0123456789abcdef.txt', 'un fichier du site');
+    touch('public://probe-0123456789abcdef.txt', $this->clock->now - 3600);
+
+    $this->assertHealth(503, self::FILES_FAILED, $this->request('/health'));
+
+    $this->assertFileExists('public://probe-0123456789abcdef.txt', 'Rien n’est supprimé à la racine.');
+    $this->assertStringContainsString('refusé', $this->journal->messages()[0]);
+  }
+
+  /**
+   * La commande drush ne crée jamais le dossier du témoin.
+   *
+   * Lancée sous un autre utilisateur que le serveur web, elle le créerait à
+   * son nom, et plus rien ne corrige les droits. Le dossier absent est un
+   * échec, avec sa cause ; présent, la commande vérifie normalement.
+   */
+  public function testLaCommandeNeCreePasLeDossier(): void {
+    $checker = $this->container->get('healthcheck.checker');
+    $files = static fn(array $outcomes): object => array_values(array_filter($outcomes, static fn(object $o): bool => $o->id === 'files'))[0];
+
+    $missing = $files($checker->run(TRUE));
+    $this->assertSame('failed', $missing->verdict);
+    $this->assertStringContainsString('la commande ne le crée pas', $missing->reason);
+    $this->assertDirectoryDoesNotExist('public://.healthcheck');
+
+    $this->request('/health');
+    $this->assertDirectoryExists('public://.healthcheck', 'La route, elle, le crée.');
+    $this->assertSame('ok', $files($checker->run(TRUE))->verdict);
   }
 
   /**
@@ -187,6 +252,8 @@ class HealthFilesTest extends HealthKernelTestBase {
     $this->assertStringContainsString('impossible à supprimer', $this->journal->messages()[0]);
 
     $stubborn->refuse = FALSE;
+    // Le témoin resté devient un reliquat après une minute.
+    touch($this->probes()[0], $this->clock->now - 61);
     $this->advance(30);
     $this->assertHealth(200, self::OK, $this->request('/health'), 'Passage suivant');
     $this->assertSame([], $this->probes(), 'Le reliquat est nettoyé.');

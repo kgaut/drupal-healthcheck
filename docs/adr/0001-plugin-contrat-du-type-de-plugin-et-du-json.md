@@ -1,6 +1,6 @@
 # 0001 — Le contrat du type de plugin `#[HealthCheck]` et du corps JSON de `/health`
 
-- **Statut** : En vigueur
+- **Statut** : Complétée par [`0003-plugin-verdicts-surs-sous-concurrence-et-hors-du-serveur-web`](0003-plugin-verdicts-surs-sous-concurrence-et-hors-du-serveur-web.md) : en vigueur, non défaite ; aucune vérification active vaut `failed`, le verdict gardé dépend de la criticité, la commande passe un contexte `cli` aux plugins
 - **Date** : 15/10/2026
 - **Ticket** : #1
 - **Périmètre** : plugin, API publique du module
@@ -136,3 +136,4 @@ gardé, ne journalise rien, affiche la cause de chaque échec et accepte
   les mainteneurs du premier site cible et d'uzinasit : `search_api` non critique, pas de
   statut global `warning`, commande drush calculée à chaque appel,
   Drupal ^11.1.
+- 15/10/2026 : complétée par `0003-plugin-verdicts-surs-sous-concurrence-et-hors-du-serveur-web` (#3).
