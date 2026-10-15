@@ -4,6 +4,8 @@ Toutes les évolutions notables du module `kgaut/healthcheck`.
 
 ## [Non publié]
 
+## [1.0.0-beta4] — 15/10/2026
+
 ### Modifié
 
 - #4 En ligne de commande, `files` vaut `not_configured` tant que `/health` n'a pas créé `.healthcheck` : `drush healthcheck:run` ne fait plus échouer un déploiement juste après l'installation. Un dossier de fichiers disparu reste `failed`. ADR `0004-plugin-files-en-ligne-de-commande-avant-le-premier-appel-web`, qui amende `0003-plugin-verdicts-surs-sous-concurrence-et-hors-du-serveur-web`.
