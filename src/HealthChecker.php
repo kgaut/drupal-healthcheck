@@ -46,6 +46,29 @@ class HealthChecker {
   public const DEFAULT_FILES_DIRECTORY = 'public://.healthcheck';
 
   /**
+   * Événement du journal : une vérification critique a échoué.
+   *
+   * Les événements sont un champ de contexte `event` plat,
+   * `<domaine>.<action>`, pour filtrer les journaux sans lire le message.
+   */
+  public const EVENT_CHECK_FAILED = 'healthcheck.check_failed';
+
+  /**
+   * Événement du journal : une vérification non critique a échoué.
+   */
+  public const EVENT_CHECK_WARNING = 'healthcheck.check_warning';
+
+  /**
+   * Événement du journal : aucune vérification active.
+   */
+  public const EVENT_NO_ACTIVE_CHECK = 'healthcheck.no_active_check';
+
+  /**
+   * Événement du journal : les définitions des vérifications sont illisibles.
+   */
+  public const EVENT_DEFINITIONS_UNREADABLE = 'healthcheck.definitions_unreadable';
+
+  /**
    * La clé du verdict gardé, dans le bac de cache par défaut.
    */
   public const CID = 'healthcheck:verdict';
@@ -108,7 +131,9 @@ class HealthChecker {
         $this->logOutcome($outcome);
       }
       if ($checks === []) {
-        $this->logger->error('Point de santé : aucune vérification active, le point de santé rend failed.');
+        $this->logger->error('Point de santé : aucune vérification active, le point de santé rend failed.', [
+          'event' => self::EVENT_NO_ACTIVE_CHECK,
+        ]);
       }
       try {
         $this->memo->set(self::CID, ['checked_at' => $now, 'active' => $active, 'checks' => $checks], $now + $window);
@@ -235,14 +260,26 @@ class HealthChecker {
 
   /**
    * Journalise un échec ; une réussite, jamais.
+   *
+   * Outre les variables du message, le contexte porte des champs plats pour
+   * les journaux structurés : `event`, `check` (l'identifiant) et `reason`
+   * (la cause).
    */
   protected function logOutcome(CheckOutcome $outcome): void {
-    $context = ['@check' => $outcome->id, '@reason' => $outcome->reason];
-    if ($outcome->verdict === self::FAILED) {
-      $this->logger->error('Point de santé : la vérification « @check » a échoué (@reason).', $context);
+    if ($outcome->verdict !== self::FAILED && $outcome->verdict !== self::WARNING) {
+      return;
     }
-    elseif ($outcome->verdict === self::WARNING) {
-      $this->logger->warning('Point de santé : la vérification non critique « @check » a échoué (@reason).', $context);
+    $context = [
+      '@check' => $outcome->id,
+      '@reason' => $outcome->reason,
+      'check' => $outcome->id,
+      'reason' => $outcome->reason,
+    ];
+    if ($outcome->verdict === self::FAILED) {
+      $this->logger->error('Point de santé : la vérification « @check » a échoué (@reason).', $context + ['event' => self::EVENT_CHECK_FAILED]);
+    }
+    else {
+      $this->logger->warning('Point de santé : la vérification non critique « @check » a échoué (@reason).', $context + ['event' => self::EVENT_CHECK_WARNING]);
     }
   }
 
@@ -280,8 +317,11 @@ class HealthChecker {
       $definitions = $this->pluginManager->getDefinitions();
     }
     catch (\Throwable $e) {
+      $reason = $e::class . ' : ' . $e->getMessage();
       $this->logger->error('Point de santé : les vérifications sont illisibles (@reason).', [
-        '@reason' => $e::class . ' : ' . $e->getMessage(),
+        '@reason' => $reason,
+        'reason' => $reason,
+        'event' => self::EVENT_DEFINITIONS_UNREADABLE,
       ]);
       return NULL;
     }

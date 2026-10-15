@@ -160,8 +160,9 @@ class HealthPluginApiTest extends HealthKernelTestBase {
     $this->assertSame([], $this->journal->messages(), 'La commande affiche, elle ne journalise pas.');
 
     $this->configure('checks.probe.critical', FALSE);
+    $json = json_decode($this->formatOutput($command->run(['format' => 'json']), 'json'), TRUE, 512, JSON_THROW_ON_ERROR);
+    $this->assertArrayNotHasKey('check', $json['probe'], 'Indexé par identifiant : pas de champ check répété.');
     $warning = $command->run();
-    $json = json_decode($this->formatOutput($warning, 'json'), TRUE, 512, JSON_THROW_ON_ERROR);
     $this->assertFalse($json['probe']['critical'], 'En JSON, `critical` est un booléen.');
     $this->assertTrue($json['database']['critical']);
     $table = $this->formatOutput($warning, 'table');
@@ -187,7 +188,9 @@ class HealthPluginApiTest extends HealthKernelTestBase {
         'reason' => 'Cause',
       ],
     ], []);
-    $options->setOption('fields', 'check,verdict,critical,reason');
+    if ($format === 'table') {
+      $options->setOption('fields', 'check,verdict,critical,reason');
+    }
     $formatters->write($output, $format, $result->getOutputData(), $options);
 
     return $output->fetch();

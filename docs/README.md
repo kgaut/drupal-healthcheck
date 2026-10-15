@@ -24,7 +24,7 @@ Le dossier [adr/](adr/) ne contient que les décisions en vigueur :
 
 - [`0001-infra-module-dedie-et-nom-machine-healthcheck`](adr/0001-infra-module-dedie-et-nom-machine-healthcheck.md) ;
 - [`0001-plugin-contrat-du-type-de-plugin-et-du-json`](adr/0001-plugin-contrat-du-type-de-plugin-et-du-json.md) ;
-- [`0003-plugin-verdicts-surs-sous-concurrence-et-hors-du-serveur-web`](adr/0003-plugin-verdicts-surs-sous-concurrence-et-hors-du-serveur-web.md) ;
+- [`0004-plugin-files-en-ligne-de-commande-avant-le-premier-appel-web`](adr/0004-plugin-files-en-ligne-de-commande-avant-le-premier-appel-web.md), qui amende `0003-plugin-verdicts-surs-sous-concurrence-et-hors-du-serveur-web` (dans [adr/archives/](adr/archives/)) ;
 - [`0002-plugin-files-ne-corrige-pas-les-droits`](adr/0002-plugin-files-ne-corrige-pas-les-droits.md), qui amende `0001-plugin-files-ecrit-dans-public` (dans [adr/archives/](adr/archives/)) ;
 - [`0001-infra-docs-de-ticket-hors-du-depot-public`](adr/0001-infra-docs-de-ticket-hors-du-depot-public.md).
 

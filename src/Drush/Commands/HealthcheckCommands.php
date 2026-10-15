@@ -62,6 +62,14 @@ final class HealthcheckCommands extends DrushCommands {
       ];
     }
     $failed = HealthChecker::globalStatus($checks) === HealthChecker::FAILED;
+    // Hors du tableau, les lignes sont indexées par identifiant : le champ
+    // `check` le répéterait. (`DefaultFields` vaudrait pour tous les formats.)
+    if (($options['format'] ?? 'table') !== 'table') {
+      $rows = array_map(static function (array $row): array {
+        unset($row['check']);
+        return $row;
+      }, $rows);
+    }
     $data = new RowsOfFields($rows);
     // Lisible dans le tableau, booléen dans les formats de données.
     $data->addRendererFunction(static fn(string $key, mixed $cell, FormatterOptions $options): mixed => $key === 'critical' && is_bool($cell) ? ($cell ? 'oui' : 'non') : $cell);

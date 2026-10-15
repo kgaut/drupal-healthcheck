@@ -147,17 +147,22 @@ class HealthFilesTest extends HealthKernelTestBase {
    * La commande drush ne crée jamais le dossier du témoin.
    *
    * Lancée sous un autre utilisateur que le serveur web, elle le créerait à
-   * son nom, et plus rien ne corrige les droits. Le dossier absent est un
-   * échec, avec sa cause ; présent, la commande vérifie normalement.
+   * son nom, et plus rien ne corrige les droits. Avant le premier appel à
+   * `/health`, le dossier absent n'est pas une panne : `not_configured`, et
+   * la commande ne fait pas échouer un déploiement. Une racine absente, elle,
+   * reste un échec. Présent, le dossier est vérifié normalement.
    */
   public function testLaCommandeNeCreePasLeDossier(): void {
     $checker = $this->container->get('healthcheck.checker');
     $files = static fn(array $outcomes): object => array_values(array_filter($outcomes, static fn(object $o): bool => $o->id === 'files'))[0];
 
     $missing = $files($checker->run(TRUE));
-    $this->assertSame('failed', $missing->verdict);
-    $this->assertStringContainsString('la commande ne le crée pas', $missing->reason);
+    $this->assertSame('not_configured', $missing->verdict, 'Avant le premier appel web : pas une panne.');
     $this->assertDirectoryDoesNotExist('public://.healthcheck');
+
+    $this->setSetting('file_public_path', $this->siteDirectory . '/files-disparu');
+    $this->assertSame('failed', $files($checker->run(TRUE))->verdict, 'Racine absente : un échec, même en ligne de commande.');
+    $this->setSetting('file_public_path', $this->siteDirectory . '/files');
 
     $this->request('/health');
     $this->assertDirectoryExists('public://.healthcheck', 'La route, elle, le crée.');

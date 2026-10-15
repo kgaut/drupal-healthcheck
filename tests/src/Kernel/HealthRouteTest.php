@@ -230,6 +230,10 @@ class HealthRouteTest extends HealthKernelTestBase {
     $messages = $this->journal->messages();
     $this->assertCount(1, $messages, 'Une vérification échouée se journalise, une fois.');
     $this->assertStringContainsString('« database »', $messages[0]);
+    $context = $this->journal->records[0]['context'];
+    $this->assertSame('healthcheck.check_failed', $context['event'], 'Un champ event plat, pour filtrer.');
+    $this->assertSame('database', $context['check']);
+    $this->assertStringContainsString('gone away', $context['reason']);
     $this->assertStringContainsString('gone away', $messages[0], 'La cause va au journal.');
 
     $this->container->get('state')->set('healthcheck_test.database_down', FALSE);
@@ -274,6 +278,7 @@ class HealthRouteTest extends HealthKernelTestBase {
 
     $this->assertHealth(503, '{"status":"failed","checks":{}}', $this->request('/health'));
     $this->assertStringContainsString('aucune vérification active', $this->journal->messages()[0]);
+    $this->assertSame('healthcheck.no_active_check', $this->journal->records[0]['context']['event']);
   }
 
   /**

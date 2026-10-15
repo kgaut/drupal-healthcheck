@@ -4,6 +4,15 @@ Toutes les évolutions notables du module `kgaut/healthcheck`.
 
 ## [Non publié]
 
+### Modifié
+
+- #4 En ligne de commande, `files` vaut `not_configured` tant que `/health` n'a pas créé `.healthcheck` : `drush healthcheck:run` ne fait plus échouer un déploiement juste après l'installation. Un dossier de fichiers disparu reste `failed`. ADR `0004-plugin-files-en-ligne-de-commande-avant-le-premier-appel-web`, qui amende `0003-plugin-verdicts-surs-sous-concurrence-et-hors-du-serveur-web`.
+- #4 `drush healthcheck:run` en JSON (ou tout format hors tableau) : lignes indexées par identifiant, sans champ `check` répété.
+
+### Ajouté
+
+- #4 Champs de contexte plats au journal : `event` (`healthcheck.check_failed`, `healthcheck.check_warning`, `healthcheck.no_active_check`, `healthcheck.definitions_unreadable`), `check` et `reason`.
+
 ## [1.0.0-beta3] — 15/10/2026
 
 ### Corrigé

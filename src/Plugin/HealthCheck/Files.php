@@ -30,7 +30,10 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  *   disparu n'est jamais recréé, il rend `failed` ;
  * - seul le sous-dossier du témoin est créé s'il manque, et jamais par la
  *   commande drush (`cli` dans la configuration du plugin), qui le créerait
- *   au nom de son propre utilisateur ;
+ *   au nom de son propre utilisateur. En ligne de commande, un sous-dossier
+ *   absent sous une racine présente rend `not_configured` : ce n'est pas une
+ *   panne, le premier appel à `/health` le crée (ADR
+ *   `0004-plugin-files-en-ligne-de-commande-avant-le-premier-appel-web`) ;
  * - ses droits ne sont jamais corrigés : non inscriptible, il rend `failed` ;
  * - la racine d'un schéma est refusée comme dossier du témoin : le nettoyage
  *   y toucherait des fichiers du site.
@@ -92,6 +95,23 @@ class Files extends HealthCheckBase {
       $container->get('config.factory'),
       $container->get('datetime.time'),
     );
+  }
+
+  /**
+   * {@inheritdoc}
+   *
+   * Faux seulement en ligne de commande, quand la racine du schéma existe et
+   * que le dossier du témoin n'a pas encore été créé par la route. Une racine
+   * absente, elle, s'applique : `check()` la dira en échec.
+   */
+  public function applies(): bool {
+    if (!($this->configuration['cli'] ?? FALSE)) {
+      return TRUE;
+    }
+    $directory = $this->directory();
+    $scheme = StreamWrapperManager::getScheme($directory);
+
+    return $scheme === FALSE || !@is_dir($scheme . '://') || @is_dir($directory);
   }
 
   /**

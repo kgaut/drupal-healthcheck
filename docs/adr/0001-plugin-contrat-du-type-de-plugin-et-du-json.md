@@ -1,6 +1,6 @@
 # 0001 — Le contrat du type de plugin `#[HealthCheck]` et du corps JSON de `/health`
 
-- **Statut** : Complétée par [`0003-plugin-verdicts-surs-sous-concurrence-et-hors-du-serveur-web`](0003-plugin-verdicts-surs-sous-concurrence-et-hors-du-serveur-web.md) : en vigueur, non défaite ; aucune vérification active vaut `failed`, le verdict gardé dépend de la criticité, la commande passe un contexte `cli` aux plugins
+- **Statut** : Complétée par [`0003-plugin-verdicts-surs-sous-concurrence-et-hors-du-serveur-web`](archives/0003-plugin-verdicts-surs-sous-concurrence-et-hors-du-serveur-web.md) : en vigueur, non défaite ; aucune vérification active vaut `failed`, le verdict gardé dépend de la criticité, la commande passe un contexte `cli` aux plugins
 - **Date** : 15/10/2026
 - **Ticket** : #1
 - **Périmètre** : plugin, API publique du module

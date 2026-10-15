@@ -1,6 +1,6 @@
 # 0002 — La vérification `files` ne corrige pas les droits du dossier qu'elle mesure
 
-- **Statut** : Complétée par [`0003-plugin-verdicts-surs-sous-concurrence-et-hors-du-serveur-web`](0003-plugin-verdicts-surs-sous-concurrence-et-hors-du-serveur-web.md) : en vigueur ; la racine du schéma n'est jamais recréée, et la commande drush ne crée pas le dossier
+- **Statut** : Complétée par [`0003-plugin-verdicts-surs-sous-concurrence-et-hors-du-serveur-web`](archives/0003-plugin-verdicts-surs-sous-concurrence-et-hors-du-serveur-web.md) : en vigueur ; la racine du schéma n'est jamais recréée, et la commande drush ne crée pas le dossier
 - **Date** : 15/10/2026
 - **Ticket** : #2
 - **Périmètre** : plugin `files`

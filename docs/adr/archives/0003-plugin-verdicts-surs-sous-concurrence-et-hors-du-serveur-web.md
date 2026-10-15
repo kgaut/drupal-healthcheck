@@ -1,12 +1,12 @@
 # 0003 — Des verdicts sûrs sous concurrence, en ligne de commande et sans aucune vérification
 
-- **Statut** : En vigueur
+- **Statut** : Amendée par [`0004-plugin-files-en-ligne-de-commande-avant-le-premier-appel-web`](../0004-plugin-files-en-ligne-de-commande-avant-le-premier-appel-web.md) : en ligne de commande, un dossier du témoin pas encore créé rend `not_configured` et non plus `failed`
 - **Date** : 15/10/2026
 - **Ticket** : #3
 - **Périmètre** : plugin, vérificateur, vérification `files`, commande drush
 - **Remplace** : —
 - **Amende** : —
-- **Complète** : [`0001-plugin-contrat-du-type-de-plugin-et-du-json`](0001-plugin-contrat-du-type-de-plugin-et-du-json.md), [`0002-plugin-files-ne-corrige-pas-les-droits`](0002-plugin-files-ne-corrige-pas-les-droits.md)
+- **Complète** : [`0001-plugin-contrat-du-type-de-plugin-et-du-json`](../0001-plugin-contrat-du-type-de-plugin-et-du-json.md), [`0002-plugin-files-ne-corrige-pas-les-droits`](../0002-plugin-files-ne-corrige-pas-les-droits.md)
 
 ## Contexte
 
@@ -77,3 +77,4 @@ ticket #3 :
 ## Suivi
 
 - 15/10/2026 : rédigée au ticket #3, sur une relecture de la beta2.
+- 15/10/2026 : amendée par `0004-plugin-files-en-ligne-de-commande-avant-le-premier-appel-web` (#4).

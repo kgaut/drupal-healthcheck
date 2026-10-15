@@ -103,11 +103,15 @@ drush healthcheck:run --format=json   # pour une CI
 ⚠️ La commande s'exécute sous l'utilisateur de drush. Elle écrit son témoin
 dans `public://.healthcheck`, mais ne **crée** jamais ce dossier : il
 appartiendrait à cet utilisateur, et le module ne corrige pas les droits.
-Juste après l'installation, appelez `/health` une fois.
+Tant que `/health` ne l'a pas créé (juste après l'installation), `files`
+vaut `not_configured` pour la commande, qui ne fait donc pas échouer un
+déploiement. Un dossier de fichiers publics disparu reste un échec.
 
 La commande vérifie à **chaque appel**, sans le verdict gardé de la route, et
-affiche la cause de chaque échec. En JSON, `critical` est un booléen. Code de sortie : 1 si une vérification
-critique échoue, 0 sinon (un `warning` ne fait pas échouer la commande).
+affiche la cause de chaque échec. En JSON, les lignes sont indexées par
+identifiant et `critical` est un booléen. Code de sortie : 1 si une
+vérification critique échoue, 0 sinon (un `warning` ne fait pas échouer la
+commande).
 
 ## Ajouter une vérification depuis un autre module
 

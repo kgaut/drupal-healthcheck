@@ -87,6 +87,8 @@ class HealthSearchApiTest extends HealthKernelTestBase {
     $this->assertNoDetail(['solr_principal'], $response);
     $this->assertCount(1, $this->journal->records);
     $this->assertSame('warning', $this->levelName($this->journal->records[0]['level']));
+    $this->assertSame('healthcheck.check_warning', $this->journal->records[0]['context']['event']);
+    $this->assertSame('search_api', $this->journal->records[0]['context']['check']);
     $this->assertStringContainsString('solr_principal', $this->journal->messages()[0]);
   }
 
