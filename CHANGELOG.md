@@ -4,6 +4,10 @@ Toutes les évolutions notables du module `kgaut/healthcheck`.
 
 ## [Non publié]
 
+### Documentation
+
+- #5 Exempter `/health` d'une authentification HTTP Basic : forme Apache par `%{THE_REQUEST}` (`%{REQUEST_URI}` est évalué après la réécriture vers `index.php` dans le `.htaccess` racine), forme nginx, vérifications.
+
 ## [1.0.0-beta4] — 15/10/2026
 
 ### Modifié
