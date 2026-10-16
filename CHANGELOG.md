@@ -4,8 +4,13 @@ Toutes les évolutions notables du module `kgaut/healthcheck`.
 
 ## [Non publié]
 
+### Modifié
+
+- #6 `scripts/ci-health.sh` ne rend jamais vert une réponse servie par un cache (`Age` supérieur à 0, `cf-cache-status` à `HIT`, `STALE`, `UPDATING` ou `REVALIDATED`, `X-Cache` contenant `HIT`), même `200` avec `"status":"ok"` : un CDN qui garde `/health` rejouait un verdict ancien. ADR `0006-sonde-une-reponse-servie-par-un-cache-n-est-pas-saine`.
+
 ### Documentation
 
+- #6 Derrière un CDN : exclure `/health` du cache (règle Cloudflare « Bypass cache »), et le vérifier par `curl`.
 - #5 Exempter `/health` d'une authentification HTTP Basic : forme Apache par `%{THE_REQUEST}` (`%{REQUEST_URI}` est évalué après la réécriture vers `index.php` dans le `.htaccess` racine), forme nginx, vérifications.
 
 ## [1.0.0-beta4] — 15/10/2026

@@ -141,7 +141,9 @@ Le contrat complet (`applies()`, exceptions, délais) est décrit dans
 
 `scripts/ci-health.sh <url>` interroge le point de santé jusqu'à 6 fois, à
 10 secondes d'intervalle, sans suivre les redirections, et sort en erreur si
-aucune réponse n'est un 200 avec `"status":"ok"`. Un exemple de job GitLab
+aucune réponse n'est un 200 avec `"status":"ok"`. Une réponse servie par le
+cache d'un CDN n'est jamais verte : excluez `/health` du cache (voir
+[Derrière un CDN](docs/exploitation/point-de-sante.md#derrière-un-cdn)). Un exemple de job GitLab
 est donné dans
 [docs/exploitation/sonde-post-deploiement.md](docs/exploitation/sonde-post-deploiement.md).
 
