@@ -4,6 +4,8 @@ Toutes les évolutions notables du module `kgaut/healthcheck`.
 
 ## [Non publié]
 
+## [1.0.0-beta5] — 16/10/2026
+
 ### Modifié
 
 - #6 `scripts/ci-health.sh` ne rend jamais vert une réponse servie par un cache (`Age` supérieur à 0, `cf-cache-status` à `HIT`, `STALE`, `UPDATING` ou `REVALIDATED`, `X-Cache` contenant `HIT`), même `200` avec `"status":"ok"` : un CDN qui garde `/health` rejouait un verdict ancien. ADR `0006-sonde-une-reponse-servie-par-un-cache-n-est-pas-saine`.
